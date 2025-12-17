@@ -121,26 +121,18 @@ const MapPage = () => {
 
   // Инициализация карты
   const initMap = useCallback(() => {
-    console.log('🗺️ initMap вызвана');
-    console.log('window.ymaps:', window.ymaps);
-    console.log('mapRef.current:', mapRef.current);
-    console.log('venues:', venues);
-    
     if (!window.ymaps || !mapRef.current) {
-      console.log('❌ Яндекс.Карты или mapRef не готовы');
       return;
     }
 
     try {
       window.ymaps.ready(() => {
-        console.log('✅ Яндекс.Карты готовы');
         try {
           if (ymapsRef.current) {
             ymapsRef.current.destroy();
           }
 
           const venuesWithCoords = venues.filter(v => v.latitude && v.longitude);
-          console.log('📍 Площадок с координатами:', venuesWithCoords.length);
           
           let center, zoom;
           
@@ -165,7 +157,6 @@ const MapPage = () => {
             controls: ['zoomControl', 'fullscreenControl', 'geolocationControl']
           });
 
-          console.log('🗺️ Карта создана:', map);
           ymapsRef.current = map;
 
           // Добавляем маркеры
@@ -251,11 +242,11 @@ const MapPage = () => {
             }
           });
         } catch (error) {
-          console.error('❌ Ошибка инициализации карты:', error);
+          console.error('Ошибка инициализации карты:', error);
         }
       });
     } catch (error) {
-      console.error('❌ Ошибка при загрузке Яндекс.Карт:', error);
+      console.error('Ошибка при загрузке Яндекс.Карт:', error);
     }
   }, [venues, targetVenueId, isMobile]);
 
@@ -280,19 +271,18 @@ const MapPage = () => {
   }, [venues, initMap]);
 
   const handleCategoryChange = (categoryId) => {
-    setSelectedCategories(prev =>
-      prev.includes(categoryId)
+    setSelectedCategories(prev => {
+      const newCategories = prev.includes(categoryId)
         ? prev.filter(id => id !== categoryId)
-        : [...prev, categoryId]
-    );
+        : [...prev, categoryId];
+      return newCategories;
+    });
+    // Автоматически применяем фильтр при изменении
   };
 
   const handleClearFilters = () => {
     setSelectedCategories([]);
-  };
-
-  const handleApplyFilters = () => {
-    loadVenues();
+    // Фильтр применится автоматически через useEffect
   };
 
   const venuesCount = venues.filter(v => v.latitude && v.longitude).length;
@@ -330,45 +320,19 @@ const MapPage = () => {
           </div>
 
           <div className="filter-actions">
-            <button onClick={handleApplyFilters} className="btn btn-primary">
-              Применить
+            <button onClick={handleClearFilters} className="btn btn-secondary btn-clear">
+              🔄 Сбросить фильтры
             </button>
-            <button onClick={handleClearFilters} className="btn btn-secondary">
-              Сбросить
-            </button>
-          </div>
-
-          <div className="venues-count">
-            📍 Найдено площадок: <strong>{venuesCount}</strong>
+            <div className="venues-count-inline">
+              📍 Найдено: <strong>{venuesCount}</strong>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Контейнер с картой */}
       <div className="map-container">
-        <div ref={mapRef} className="yandex-map">
-          {!ymapsRef.current && venuesCount > 0 && (
-            <div style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              textAlign: 'center',
-              zIndex: 10,
-              background: 'white',
-              padding: '20px',
-              borderRadius: '8px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-            }}>
-              <p style={{ color: '#1A4D8F', fontSize: '1.2rem', marginBottom: '10px' }}>
-                🗺️ Загрузка карты...
-              </p>
-              <p style={{ color: '#6B6B6B', fontSize: '0.9rem' }}>
-                Инициализация Яндекс.Карт
-              </p>
-            </div>
-          )}
-        </div>
+        <div ref={mapRef} className="yandex-map" />
         
         {venuesCount === 0 && (
           <div className="map-overlay-message">
@@ -402,7 +366,17 @@ const MapPage = () => {
 
             {/* Content */}
             <div className="bottom-sheet-content">
-              {/* Image Slider */}
+              {/* Venue Info - Header */}
+              <div className="venue-header">
+                <h2>{selectedVenue.title}</h2>
+                {selectedVenue.average_rating > 0 && (
+                  <div className="venue-rating">
+                    ⭐ {selectedVenue.average_rating}
+                  </div>
+                )}
+              </div>
+
+              {/* Image */}
               {selectedVenue.main_image || (selectedVenue.images && selectedVenue.images.length > 0) ? (
                 <div className="venue-image">
                   <img 
@@ -412,23 +386,27 @@ const MapPage = () => {
                 </div>
               ) : null}
 
-              {/* Venue Info */}
+              {/* Venue Details - Compact */}
               <div className="venue-info">
-                <h2>{selectedVenue.title}</h2>
-                
-                <div className="venue-details">
-                  <p><strong>📍 Адрес:</strong> {selectedVenue.address}</p>
-                  <p><strong>👥 Вместимость:</strong> {selectedVenue.capacity} человек</p>
-                  <p><strong>💰 Цена:</strong> {selectedVenue.price_per_hour} ₽/час</p>
-                  
-                  {selectedVenue.average_rating > 0 && (
-                    <p><strong>⭐ Рейтинг:</strong> {selectedVenue.average_rating} ({selectedVenue.reviews_count} отзывов)</p>
-                  )}
+                <div className="venue-details-compact">
+                  <div className="detail-item">
+                    <span className="detail-icon">📍</span>
+                    <span className="detail-text">{selectedVenue.address}</span>
+                  </div>
+                  <div className="detail-row">
+                    <div className="detail-item">
+                      <span className="detail-icon">👥</span>
+                      <span className="detail-text">{selectedVenue.capacity} чел.</span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-icon">💰</span>
+                      <span className="detail-text">{selectedVenue.price_per_hour} ₽/ч</span>
+                    </div>
+                  </div>
                 </div>
 
                 {bottomSheetExpanded && selectedVenue.description && (
                   <div className="venue-description">
-                    <h3>Описание</h3>
                     <p>{selectedVenue.description}</p>
                   </div>
                 )}
@@ -436,6 +414,7 @@ const MapPage = () => {
                 <Link 
                   to={`/venues/${selectedVenue.id}`} 
                   className="btn btn-primary btn-block"
+                  onClick={() => setBottomSheetOpen(false)}
                 >
                   Подробнее и забронировать →
                 </Link>
