@@ -362,7 +362,8 @@
   }
 }
 
-/* Стили для балунов Яндекс.Карт (десктоп) */
+/* Стили для балунов Яндекс.Карт (только десктоп) */
+/* На мобильных balloon скрыт, используется bottom sheet */
 :global(.ymaps-2-1-79-balloon__content) {
   padding: 0 !important;
   margin: 0 !important;
@@ -372,10 +373,13 @@
   border-radius: 16px !important;
   overflow: hidden !important;
   box-shadow: 0 8px 24px rgba(0,0,0,0.15) !important;
+  max-width: 350px !important;
 }
 
 :global(.ymaps-2-1-79-balloon__content-wrapper) {
   padding: 15px !important;
+  max-height: 400px !important;
+  overflow-y: auto !important;
 }
 
 :global(.ymaps-2-1-79-balloon) {
@@ -499,6 +503,11 @@
     position: absolute;
     width: 100%;
     height: 100%;
+  }
+
+  /* На мобильных скрываем balloon, используем bottom sheet */
+  :global(.ymaps-2-1-79-balloon) {
+    display: none !important;
   }
 
   /* На мобильных не показываем balloon */

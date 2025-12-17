@@ -172,13 +172,13 @@ const MapPage = () => {
                 {
                   balloonContentHeader: `<div style="font-size: 1.1rem; font-weight: 600; color: #1A4D8F; margin-bottom: 8px;">${venue.title}</div>`,
                   balloonContentBody: `
-                    <div style="max-width: 280px;">
+                    <div style="max-width: 300px;">
                       ${imageHtml}
-                      <p style="margin: 8px 0; color: #6B6B6B; font-size: 0.9rem;"><strong>Адрес:</strong> ${venue.address}</p>
-                      <p style="margin: 8px 0; color: #6B6B6B; font-size: 0.9rem;"><strong>Вместимость:</strong> ${venue.capacity} человек</p>
-                      <p style="margin: 8px 0; color: #1A4D8F; font-size: 1rem; font-weight: 600;"><strong>Цена:</strong> ${venue.price_per_hour} ₽/час</p>
-                      ${venue.average_rating > 0 ? `<p style="margin: 8px 0; color: #4DA3FF; font-weight: 600;">⭐ ${venue.average_rating} (${venue.reviews_count} отзывов)</p>` : ''}
-                      <a href="/venues/${venue.id}" style="display: inline-block; margin-top: 10px; padding: 8px 16px; background: linear-gradient(135deg, #1A4D8F 0%, #4DA3FF 100%); color: white; text-decoration: none; border-radius: 6px; font-weight: 600; text-align: center;">Подробнее →</a>
+                      <p style="margin: 8px 0; color: #6B6B6B; font-size: 0.9rem;"><strong>📍 Адрес:</strong> ${venue.address}</p>
+                      <p style="margin: 8px 0; color: #6B6B6B; font-size: 0.9rem;"><strong>👥 Вместимость:</strong> ${venue.capacity} человек</p>
+                      <p style="margin: 8px 0; color: #1A4D8F; font-size: 1rem; font-weight: 600;"><strong>💰 Цена:</strong> ${venue.price_per_hour} ₽/час</p>
+                      ${venue.average_rating > 0 ? `<p style="margin: 8px 0; color: #F5A623; font-weight: 600;">⭐ ${venue.average_rating} (${venue.reviews_count} отзывов)</p>` : ''}
+                      <a href="/venues/${venue.id}" style="display: block; width: 100%; margin-top: 12px; padding: 10px 20px; background: linear-gradient(135deg, #1A4D8F 0%, #4DA3FF 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; text-align: center; box-sizing: border-box; transition: transform 0.2s;">Подробнее →</a>
                     </div>
                   `,
                   hintContent: venue.title
@@ -199,9 +199,12 @@ const MapPage = () => {
               // На мобильных - открываем bottom sheet, на десктопе - balloon
               placemark.events.add('click', () => {
                 if (isMobile) {
+                  placemark.balloon.close(); // Закрываем balloon на мобильных
                   handleVenueClick(venue);
+                } else {
+                  // На десктопе balloon откроется автоматически
+                  placemark.balloon.open();
                 }
-                // На десктопе balloon откроется автоматически
               });
 
               placemark.events.add('mouseenter', () => {
