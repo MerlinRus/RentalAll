@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -22,6 +22,16 @@ import AdminDashboard from './pages/AdminDashboard';
 import NotFoundPage from './pages/NotFoundPage';
 
 import './App.css';
+
+// Компонент для условного рендеринга Footer
+function ConditionalFooter() {
+  const location = useLocation();
+  // Не показываем Footer на странице карты
+  if (location.pathname === '/map') {
+    return null;
+  }
+  return <Footer />;
+}
 
 function App() {
   return (
@@ -62,7 +72,7 @@ function App() {
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </main>
-          <Footer />
+          <ConditionalFooter />
           <ToastContainer position="bottom-right" autoClose={3000} />
         </div>
       </Router>
