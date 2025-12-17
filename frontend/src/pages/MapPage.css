@@ -124,9 +124,10 @@
 .map-container {
   flex: 1;
   position: relative;
-  background: #F6F7F9;
+  background: #E8F3FF; /* Светлый фон для видимости */
   overflow: hidden;
   min-width: 0; /* Важно для flex */
+  min-height: 400px; /* Минимальная высота для теста */
 }
 
 .yandex-map {
@@ -137,6 +138,7 @@
   left: 0;
   right: 0;
   bottom: 0;
+  background: #F6F7F9; /* Фон для самой карты */
 }
 
 .map-overlay-message {

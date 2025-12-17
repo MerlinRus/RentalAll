@@ -121,18 +121,26 @@ const MapPage = () => {
 
   // Инициализация карты
   const initMap = useCallback(() => {
+    console.log('🗺️ initMap вызвана');
+    console.log('window.ymaps:', window.ymaps);
+    console.log('mapRef.current:', mapRef.current);
+    console.log('venues:', venues);
+    
     if (!window.ymaps || !mapRef.current) {
+      console.log('❌ Яндекс.Карты или mapRef не готовы');
       return;
     }
 
     try {
       window.ymaps.ready(() => {
+        console.log('✅ Яндекс.Карты готовы');
         try {
           if (ymapsRef.current) {
             ymapsRef.current.destroy();
           }
 
           const venuesWithCoords = venues.filter(v => v.latitude && v.longitude);
+          console.log('📍 Площадок с координатами:', venuesWithCoords.length);
           
           let center, zoom;
           
@@ -157,6 +165,7 @@ const MapPage = () => {
             controls: ['zoomControl', 'fullscreenControl', 'geolocationControl']
           });
 
+          console.log('🗺️ Карта создана:', map);
           ymapsRef.current = map;
 
           // Добавляем маркеры
@@ -242,11 +251,11 @@ const MapPage = () => {
             }
           });
         } catch (error) {
-          console.error('Ошибка инициализации карты:', error);
+          console.error('❌ Ошибка инициализации карты:', error);
         }
       });
     } catch (error) {
-      console.error('Ошибка при загрузке Яндекс.Карт:', error);
+      console.error('❌ Ошибка при загрузке Яндекс.Карт:', error);
     }
   }, [venues, targetVenueId, isMobile]);
 
@@ -337,7 +346,29 @@ const MapPage = () => {
 
       {/* Контейнер с картой */}
       <div className="map-container">
-        <div ref={mapRef} className="yandex-map" />
+        <div ref={mapRef} className="yandex-map">
+          {!ymapsRef.current && venuesCount > 0 && (
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              textAlign: 'center',
+              zIndex: 10,
+              background: 'white',
+              padding: '20px',
+              borderRadius: '8px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+            }}>
+              <p style={{ color: '#1A4D8F', fontSize: '1.2rem', marginBottom: '10px' }}>
+                🗺️ Загрузка карты...
+              </p>
+              <p style={{ color: '#6B6B6B', fontSize: '0.9rem' }}>
+                Инициализация Яндекс.Карт
+              </p>
+            </div>
+          )}
+        </div>
         
         {venuesCount === 0 && (
           <div className="map-overlay-message">
