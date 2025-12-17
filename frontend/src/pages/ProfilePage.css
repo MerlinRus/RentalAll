@@ -1,0 +1,64 @@
+.profile-page {
+  padding: 40px 20px;
+}
+
+.profile-page h1 {
+  text-align: center;
+  margin-bottom: 40px;
+  color: #333;
+}
+
+.profile-section {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  padding: 30px;
+  margin-bottom: 30px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.profile-section h2 {
+  margin-bottom: 25px;
+  color: #1A4D8F;
+  font-size: 1.5rem;
+}
+
+.profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.info-item .label {
+  font-weight: 500;
+  color: #666;
+}
+
+.info-item .value {
+  color: #333;
+}
+
+.profile-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.form-actions button {
+  flex: 1;
+}
+

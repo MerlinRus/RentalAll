@@ -1,0 +1,329 @@
+.venue-card {
+  background: #FFFFFF;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid rgba(0,0,0,0.05);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.venue-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #1A4D8F, #4DA3FF);
+  transform: scaleX(0);
+  transition: transform 0.4s ease;
+  z-index: 1;
+}
+
+.venue-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 24px rgba(26, 77, 143, 0.15);
+  border-color: rgba(26, 77, 143, 0.2);
+}
+
+.venue-card:hover::before {
+  transform: scaleX(1);
+}
+
+/* Контейнер изображений */
+.venue-image-container {
+  width: 100%;
+  height: 280px;
+  position: relative;
+  background: #f0f0f0;
+  overflow: hidden;
+}
+
+.venue-image {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F6F7F9;
+}
+
+.venue-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* Не обрезаем, показываем полностью */
+  transition: transform 0.3s ease;
+  background: #FFFFFF;
+}
+
+.venue-card:hover .venue-image img {
+  transform: scale(1.03);
+}
+
+/* Кнопки навигации */
+.image-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.95);
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 24px;
+  font-weight: bold;
+  color: #1A4D8F;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  opacity: 0;
+}
+
+.venue-card:hover .image-nav-btn {
+  opacity: 1;
+}
+
+.image-nav-btn:hover {
+  background: #FFFFFF;
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.image-nav-btn:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.prev-btn {
+  left: 12px;
+}
+
+.next-btn {
+  right: 12px;
+}
+
+/* Индикаторы */
+.image-indicators {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 2;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 6px 10px;
+  border-radius: 20px;
+  backdrop-filter: blur(4px);
+}
+
+.indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.3s ease;
+}
+
+.indicator:hover {
+  background: rgba(255, 255, 255, 0.8);
+  transform: scale(1.2);
+}
+
+.indicator.active {
+  background: white;
+  width: 24px;
+  border-radius: 4px;
+}
+
+/* Счетчик фотографий */
+.image-counter {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  z-index: 2;
+  backdrop-filter: blur(4px);
+}
+
+/* Заглушка без изображения */
+.no-image {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 1.05rem;
+  text-align: center;
+  padding: 20px;
+  position: relative;
+}
+
+.no-image::before {
+  content: '🏢';
+  font-size: 4rem;
+  position: absolute;
+  opacity: 0.3;
+}
+
+/* Контент карточки */
+.venue-content {
+  padding: 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.venue-content h3 {
+  margin-bottom: 16px;
+  color: #2A2A2A;
+  font-size: 1.4rem;
+  font-weight: 600;
+  line-height: 1.3;
+  transition: color 0.3s ease;
+}
+
+.venue-card:hover .venue-content h3 {
+  color: #1A4D8F;
+}
+
+.venue-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.venue-capacity {
+  color: #6B6B6B;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.venue-price {
+  color: #1A4D8F;
+  font-weight: 700;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.venue-address {
+  color: #6B6B6B;
+  margin-bottom: 14px;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  line-height: 1.5;
+}
+
+.venue-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.category-tag {
+  background: linear-gradient(135deg, #E8F3FF 0%, #D1E7FF 100%);
+  color: #1A4D8F;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(26, 77, 143, 0.2);
+}
+
+.venue-rating {
+  margin-top: 12px;
+  color: #4DA3FF;
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #E8F3FF;
+  border-radius: 8px;
+  width: fit-content;
+}
+
+/* Кнопка "Посмотреть на карте" */
+.map-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, #30C48D 0%, #20A070 100%);
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(48, 196, 141, 0.25);
+  width: fit-content;
+}
+
+.map-link-btn:hover {
+  background: linear-gradient(135deg, #20A070 0%, #30C48D 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(48, 196, 141, 0.35);
+}
+
+.map-link-btn:active {
+  transform: translateY(0);
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .venue-image-container {
+    height: 220px;
+  }
+
+  .image-nav-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+  }
+
+  .prev-btn {
+    left: 8px;
+  }
+
+  .next-btn {
+    right: 8px;
+  }
+
+  .venue-content h3 {
+    font-size: 1.2rem;
+  }
+}
+

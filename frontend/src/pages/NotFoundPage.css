@@ -1,0 +1,26 @@
+.not-found-page {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.not-found-page h1 {
+  font-size: 8rem;
+  color: #1A4D8F;
+  margin-bottom: 20px;
+}
+
+.not-found-page h2 {
+  font-size: 2rem;
+  color: #333;
+  margin-bottom: 15px;
+}
+
+.not-found-page p {
+  font-size: 1.2rem;
+  color: #666;
+  margin-bottom: 30px;
+}
+

@@ -1,0 +1,168 @@
+.bookings-page {
+  padding: 40px 20px;
+}
+
+.bookings-page h1 {
+  text-align: center;
+  margin-bottom: 40px;
+  color: #333;
+}
+
+.no-bookings {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  color: #666;
+  font-size: 1.2rem;
+}
+
+.bookings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.booking-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  padding: 25px;
+}
+
+.booking-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.booking-header h3 {
+  color: #333;
+  font-size: 1.5rem;
+}
+
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.status-confirmed {
+  background-color: #c8e6c9;
+  color: #2e7d32;
+}
+
+.status-pending {
+  background-color: #fff9c4;
+  color: #f57f17;
+}
+
+.status-cancelled {
+  background-color: #ffcdd2;
+  color: #c62828;
+}
+
+.booking-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.detail-row .label {
+  font-weight: 500;
+  color: #666;
+}
+
+.detail-row .price {
+  color: #1A4D8F;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.booking-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.review-status {
+  color: #30C48D;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 8px 12px;
+  background: rgba(48, 196, 141, 0.1);
+  border-radius: 6px;
+}
+
+.btn-sm {
+  padding: 8px 16px;
+  font-size: 0.9rem;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  padding: 30px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-content h2 {
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.modal-actions button {
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .booking-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .booking-actions {
+    width: 100%;
+  }
+
+  .booking-actions button {
+    flex: 1;
+  }
+}
+
