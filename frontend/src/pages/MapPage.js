@@ -10,10 +10,85 @@ const MapPage = () => {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchParams] = useSearchParams();
-  const targetVenueId = searchParams.get('venue'); // ID площадки из URL параметра
+  const targetVenueId = searchParams.get('venue');
   const mapRef = useRef(null);
   const ymapsRef = useRef(null);
-  const placemarkRefs = useRef({}); // Хранилище ссылок на маркеры
+  const placemarkRefs = useRef({});
+  
+  // Состояния для bottom sheet (мобильная версия)
+  const [selectedVenue, setSelectedVenue] = useState(null);
+  const [bottomSheetOpen, setBottomSheetOpen] = useState(false);
+  const [bottomSheetExpanded, setBottomSheetExpanded] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const bottomSheetRef = useRef(null);
+  const startYRef = useRef(0);
+  const currentTranslateRef = useRef(0);
+
+  // Отслеживание изменения размера экрана
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setBottomSheetOpen(false);
+        setBottomSheetExpanded(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Обработка открытия площадки в bottom sheet
+  const handleVenueClick = (venue) => {
+    if (isMobile) {
+      setSelectedVenue(venue);
+      setBottomSheetOpen(true);
+      setBottomSheetExpanded(false);
+    }
+  };
+
+  // Touch handlers для drag bottom sheet
+  const handleTouchStart = (e) => {
+    startYRef.current = e.touches[0].clientY;
+    currentTranslateRef.current = bottomSheetExpanded ? 0 : 60;
+  };
+
+  const handleTouchMove = (e) => {
+    if (!bottomSheetRef.current) return;
+    
+    const currentY = e.touches[0].clientY;
+    const diff = startYRef.current - currentY;
+    const newTranslate = currentTranslateRef.current - diff;
+    
+    // Ограничиваем движение
+    if (newTranslate >= 0 && newTranslate <= 100) {
+      bottomSheetRef.current.style.transform = `translateY(${newTranslate}%)`;
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!bottomSheetRef.current) return;
+    
+    const endY = e.changedTouches[0].clientY;
+    const diff = startYRef.current - endY;
+    
+    // Если свайпнули вверх больше чем на 50px - раскрываем
+    if (diff > 50 && !bottomSheetExpanded) {
+      setBottomSheetExpanded(true);
+    }
+    // Если свайпнули вниз больше чем на 50px - сворачиваем или закрываем
+    else if (diff < -50) {
+      if (bottomSheetExpanded) {
+        setBottomSheetExpanded(false);
+      } else {
+        setBottomSheetOpen(false);
+      }
+    }
+    
+    // Возвращаем в исходное положение
+    bottomSheetRef.current.style.transform = '';
+  };
 
   // Загрузка категорий
   const loadCategories = async () => {
@@ -53,24 +128,20 @@ const MapPage = () => {
     try {
       window.ymaps.ready(() => {
         try {
-          // Уничтожаем старую карту если есть
           if (ymapsRef.current) {
             ymapsRef.current.destroy();
           }
 
-          // Находим центр карты (среднее по всем координатам)
           const venuesWithCoords = venues.filter(v => v.latitude && v.longitude);
           
           let center, zoom;
           
-          // Если указан конкретный venue ID, центрируем карту на нём
           const targetVenue = targetVenueId ? venuesWithCoords.find(v => v.id === parseInt(targetVenueId)) : null;
           
           if (targetVenue) {
             center = [parseFloat(targetVenue.latitude), parseFloat(targetVenue.longitude)];
-            zoom = 15; // Больший zoom для конкретной площадки
+            zoom = 15;
           } else if (venuesWithCoords.length === 0) {
-            // Если нет координат, центр Кирова
             center = [58.603591, 49.668023];
             zoom = 12;
           } else {
@@ -88,10 +159,9 @@ const MapPage = () => {
 
           ymapsRef.current = map;
 
-          // Добавляем маркеры для каждой площадки
+          // Добавляем маркеры
           venuesWithCoords.forEach(venue => {
             try {
-              // Формируем HTML для балуна с фото
               const imageUrl = venue.main_image || (venue.images && venue.images[0] ? venue.images[0].image : null);
               const imageHtml = imageUrl 
                 ? `<img src="${imageUrl}" alt="${venue.title}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px; margin-bottom: 10px;" />`
@@ -114,7 +184,6 @@ const MapPage = () => {
                   hintContent: venue.title
                 },
                 {
-                  // Круглый маркер с кастомной иконкой
                   iconLayout: 'default#image',
                   iconImageHref: 'data:image/svg+xml;base64,' + btoa(`
                     <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 50 50">
@@ -127,7 +196,14 @@ const MapPage = () => {
                 }
               );
 
-              // Добавляем анимацию при наведении
+              // На мобильных - открываем bottom sheet, на десктопе - balloon
+              placemark.events.add('click', () => {
+                if (isMobile) {
+                  handleVenueClick(venue);
+                }
+                // На десктопе balloon откроется автоматически
+              });
+
               placemark.events.add('mouseenter', () => {
                 placemark.options.set('iconImageHref', 'data:image/svg+xml;base64,' + btoa(`
                   <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60">
@@ -151,119 +227,92 @@ const MapPage = () => {
               });
 
               map.geoObjects.add(placemark);
-              
-              // Сохраняем ссылку на маркер
               placemarkRefs.current[venue.id] = placemark;
+
+              // Если это целевая площадка, открываем её balloon/bottom sheet
+              if (targetVenueId && venue.id === parseInt(targetVenueId)) {
+                if (isMobile) {
+                  handleVenueClick(venue);
+                } else {
+                  placemark.balloon.open();
+                }
+              }
             } catch (err) {
               console.error(`Ошибка добавления маркера для ${venue.title}:`, err);
             }
           });
-
-          // Если указан targetVenueId, открываем балун автоматически
-          if (targetVenueId && placemarkRefs.current[targetVenueId]) {
-            setTimeout(() => {
-              placemarkRefs.current[targetVenueId].balloon.open();
-            }, 500); // Небольшая задержка для корректной инициализации
-          }
-        } catch (err) {
-          console.error('Ошибка при создании карты:', err);
+        } catch (error) {
+          console.error('Ошибка инициализации карты:', error);
         }
       });
-    } catch (err) {
-      console.error('Ошибка ymaps.ready:', err);
+    } catch (error) {
+      console.error('Ошибка при загрузке Яндекс.Карт:', error);
     }
-  }, [venues, targetVenueId]);
+  }, [venues, targetVenueId, isMobile]);
 
-  const handleCategoryToggle = (categoryId) => {
-    setSelectedCategories(prev => {
-      if (prev.includes(categoryId)) {
-        return prev.filter(id => id !== categoryId);
-      } else {
-        return [...prev, categoryId];
-      }
-    });
-  };
-
-  const handleApplyFilters = () => {
-    setLoading(true);
-    loadVenues();
-  };
-
-  const handleResetFilters = () => {
-    setSelectedCategories([]);
-    setLoading(true);
-    // Перезагружаем без фильтров
-    setTimeout(() => {
-      loadVenues();
-    }, 100);
-  };
-
-  // Инициализация при загрузке
   useEffect(() => {
     loadCategories();
-    loadVenues();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Загрузка Yandex Maps API когда появляются площадки
   useEffect(() => {
-    // Загружаем Yandex Maps API только если есть площадки
-    if (venues.length === 0) return;
+    loadVenues();
+  }, [loadVenues]);
 
-    const loadYandexMaps = () => {
-      if (!window.ymaps) {
-        const script = document.createElement('script');
-        script.src = 'https://api-maps.yandex.ru/2.1/?lang=ru_RU';
-        script.async = true;
-        script.onload = () => {
-          initMap();
-        };
-        script.onerror = () => {
-          console.error('Ошибка загрузки Yandex Maps API');
-        };
-        document.body.appendChild(script);
-      } else {
-        initMap();
-      }
-    };
+  useEffect(() => {
+    if (venues.length > 0) {
+      initMap();
+    }
 
-    const timeoutId = setTimeout(() => {
-      loadYandexMaps();
-    }, 100);
-
-    // Cleanup
     return () => {
-      clearTimeout(timeoutId);
       if (ymapsRef.current) {
-        try {
-          ymapsRef.current.destroy();
-        } catch (err) {
-          console.error('Ошибка при уничтожении карты:', err);
-        }
-        ymapsRef.current = null;
+        ymapsRef.current.destroy();
       }
     };
   }, [venues, initMap]);
 
+  const handleCategoryChange = (categoryId) => {
+    setSelectedCategories(prev =>
+      prev.includes(categoryId)
+        ? prev.filter(id => id !== categoryId)
+        : [...prev, categoryId]
+    );
+  };
+
+  const handleClearFilters = () => {
+    setSelectedCategories([]);
+  };
+
+  const handleApplyFilters = () => {
+    loadVenues();
+  };
+
+  const venuesCount = venues.filter(v => v.latitude && v.longitude).length;
+
   if (loading) {
-    return <div className="loading">Загрузка...</div>;
+    return (
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <p>Загрузка карты...</p>
+      </div>
+    );
   }
 
   return (
     <div className="map-page">
+      {/* Sidebar с фильтрами - на десктопе слева, на мобильных сверху */}
       <div className="map-sidebar">
         <div className="sidebar-content">
-          <h2>Фильтры</h2>
+          <h2>🗺️ Карта площадок</h2>
           
           <div className="filter-section">
             <h3>Категории</h3>
-            <div className="categories-list">
+            <div className={`categories-list ${isMobile ? 'horizontal-scroll' : ''}`}>
               {categories.map(category => (
                 <label key={category.id} className="category-checkbox">
                   <input
                     type="checkbox"
                     checked={selectedCategories.includes(category.id)}
-                    onChange={() => handleCategoryToggle(category.id)}
+                    onChange={() => handleCategoryChange(category.id)}
                   />
                   <span>{category.name}</span>
                 </label>
@@ -272,32 +321,100 @@ const MapPage = () => {
           </div>
 
           <div className="filter-actions">
-            <button className="btn btn-primary" onClick={handleApplyFilters}>
+            <button onClick={handleApplyFilters} className="btn btn-primary">
               Применить
             </button>
-            <button className="btn btn-secondary" onClick={handleResetFilters}>
+            <button onClick={handleClearFilters} className="btn btn-secondary">
               Сбросить
             </button>
           </div>
 
           <div className="venues-count">
-            Найдено площадок: <strong>{venues.filter(v => v.latitude && v.longitude).length}</strong>
+            📍 Найдено площадок: <strong>{venuesCount}</strong>
           </div>
         </div>
       </div>
 
+      {/* Контейнер с картой */}
       <div className="map-container">
-        <div ref={mapRef} className="yandex-map"></div>
-        {venues.length > 0 && venues.filter(v => v.latitude && v.longitude).length === 0 && (
+        <div ref={mapRef} className="yandex-map" />
+        
+        {venuesCount === 0 && (
           <div className="map-overlay-message">
             <p>📍 У площадок еще не указаны координаты на карте</p>
             <p>Добавьте координаты через админ-панель Django</p>
           </div>
         )}
       </div>
+
+      {/* Bottom Sheet для мобильных */}
+      {isMobile && bottomSheetOpen && selectedVenue && (
+        <>
+          {/* Overlay */}
+          <div 
+            className="bottom-sheet-overlay"
+            onClick={() => setBottomSheetOpen(false)}
+          />
+          
+          {/* Bottom Sheet */}
+          <div
+            ref={bottomSheetRef}
+            className={`bottom-sheet ${bottomSheetExpanded ? 'expanded' : ''}`}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            {/* Drag Handle */}
+            <div className="bottom-sheet-handle">
+              <div className="handle-bar"></div>
+            </div>
+
+            {/* Content */}
+            <div className="bottom-sheet-content">
+              {/* Image Slider */}
+              {selectedVenue.main_image || (selectedVenue.images && selectedVenue.images.length > 0) ? (
+                <div className="venue-image">
+                  <img 
+                    src={selectedVenue.main_image || selectedVenue.images[0].image} 
+                    alt={selectedVenue.title}
+                  />
+                </div>
+              ) : null}
+
+              {/* Venue Info */}
+              <div className="venue-info">
+                <h2>{selectedVenue.title}</h2>
+                
+                <div className="venue-details">
+                  <p><strong>📍 Адрес:</strong> {selectedVenue.address}</p>
+                  <p><strong>👥 Вместимость:</strong> {selectedVenue.capacity} человек</p>
+                  <p><strong>💰 Цена:</strong> {selectedVenue.price_per_hour} ₽/час</p>
+                  
+                  {selectedVenue.average_rating > 0 && (
+                    <p><strong>⭐ Рейтинг:</strong> {selectedVenue.average_rating} ({selectedVenue.reviews_count} отзывов)</p>
+                  )}
+                </div>
+
+                {bottomSheetExpanded && selectedVenue.description && (
+                  <div className="venue-description">
+                    <h3>Описание</h3>
+                    <p>{selectedVenue.description}</p>
+                  </div>
+                )}
+
+                <Link 
+                  to={`/venues/${selectedVenue.id}`} 
+                  className="btn btn-primary btn-block"
+                >
+                  Подробнее и забронировать →
+                </Link>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
 
 export default MapPage;
-
