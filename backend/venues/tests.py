@@ -20,7 +20,9 @@ class VenueQueryOptimizationTestCase(TestCase):
     
     def setUp(self):
         """Подготовка тестовых данных"""
+        # Используем format='json' для правильных API запросов без редиректов
         self.client = APIClient()
+        self.client.default_format = 'json'
         
         # Создаём пользователя
         self.user = User.objects.create_user(
@@ -168,6 +170,7 @@ class VenueSerializerTestCase(TestCase):
     def test_venue_list_serializer_fields(self):
         """Проверка наличия всех полей в VenueListSerializer"""
         client = APIClient()
+        client.default_format = 'json'
         response = client.get(f'/api/venues/')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -185,6 +188,7 @@ class VenueSerializerTestCase(TestCase):
     def test_venue_detail_serializer_fields(self):
         """Проверка наличия всех полей в VenueDetailSerializer"""
         client = APIClient()
+        client.default_format = 'json'
         response = client.get(f'/api/venues/{self.venue.id}/')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -206,6 +210,7 @@ class VenueAPIPermissionsTestCase(TestCase):
     
     def setUp(self):
         self.client = APIClient()
+        self.client.default_format = 'json'
         
         # Обычный пользователь
         self.user = User.objects.create_user(
@@ -288,6 +293,7 @@ class VenueCategoryTestCase(TestCase):
     
     def setUp(self):
         self.client = APIClient()
+        self.client.default_format = 'json'
         self.category1 = Category.objects.create(name='Категория 1')
         self.category2 = Category.objects.create(name='Категория 2')
     
