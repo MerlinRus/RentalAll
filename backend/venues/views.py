@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
+from django.db.models import Avg, Count, Q
 from .models import Category, Venue, VenueImage
 from .serializers import (
     CategorySerializer,
@@ -46,10 +47,31 @@ class VenueListView(generics.ListCreateAPIView):
         return VenueListSerializer
     
     def get_queryset(self):
+        """Оптимизированный queryset с prefetch для избежания N+1 queries"""
         queryset = Venue.objects.all()
+        
+        # Оптимизация: prefetch related данных
+        queryset = queryset.prefetch_related(
+            'images',  # Изображения площадки
+            'categories',  # Категории
+        ).select_related(
+            'owner'  # Владелец площадки
+        ).annotate(
+            # Вычисляем средний рейтинг и количество отзывов на уровне БД
+            average_rating=Avg(
+                'reviews__rating',
+                filter=Q(reviews__is_approved=True)
+            ),
+            reviews_count=Count(
+                'reviews',
+                filter=Q(reviews__is_approved=True)
+            )
+        )
+        
         # Если не администратор, показывать только активные площадки
         if not (self.request.user.is_authenticated and self.request.user.is_admin()):
             queryset = queryset.filter(is_active=True)
+        
         return queryset
     
     def perform_create(self, serializer):
@@ -58,8 +80,26 @@ class VenueListView(generics.ListCreateAPIView):
 
 class VenueDetailView(generics.RetrieveUpdateDestroyAPIView):
     """Детальная информация о площадке"""
-    queryset = Venue.objects.all()
     permission_classes = [IsAdminOrReadOnly]
+    
+    def get_queryset(self):
+        """Оптимизированный queryset для детальной страницы"""
+        return Venue.objects.prefetch_related(
+            'images',
+            'categories',
+            'reviews__user',  # Отзывы с информацией о пользователях
+        ).select_related(
+            'owner'
+        ).annotate(
+            average_rating=Avg(
+                'reviews__rating',
+                filter=Q(reviews__is_approved=True)
+            ),
+            reviews_count=Count(
+                'reviews',
+                filter=Q(reviews__is_approved=True)
+            )
+        )
     
     def get_serializer_class(self):
         if self.request.method in ['PUT', 'PATCH']:

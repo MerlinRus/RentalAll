@@ -24,8 +24,11 @@ class VenueListSerializer(serializers.ModelSerializer):
     categories = CategorySerializer(many=True, read_only=True)
     images = VenueImageSerializer(many=True, read_only=True)
     main_image = serializers.SerializerMethodField()
-    average_rating = serializers.SerializerMethodField()
-    reviews_count = serializers.SerializerMethodField()
+    # Используем аннотированные поля из queryset вместо методов модели
+    average_rating = serializers.DecimalField(
+        max_digits=3, decimal_places=2, read_only=True, coerce_to_string=False
+    )
+    reviews_count = serializers.IntegerField(read_only=True)
     
     class Meta:
         model = Venue
@@ -37,28 +40,24 @@ class VenueListSerializer(serializers.ModelSerializer):
     
     def get_main_image(self, obj):
         """Получить первое изображение площадки"""
-        first_image = obj.images.first()
+        # Благодаря prefetch_related, это не создаст дополнительный запрос
+        first_image = obj.images.first() if obj.images.all() else None
         if first_image:
             request = self.context.get('request')
             if request:
                 return request.build_absolute_uri(first_image.image.url)
         return None
-    
-    def get_average_rating(self, obj):
-        """Получить средний рейтинг"""
-        return obj.get_average_rating()
-    
-    def get_reviews_count(self, obj):
-        """Получить количество отзывов"""
-        return obj.get_reviews_count()
 
 
 class VenueDetailSerializer(serializers.ModelSerializer):
     """Сериализатор для детальной информации о площадке"""
     categories = CategorySerializer(many=True, read_only=True)
     images = VenueImageSerializer(many=True, read_only=True)
-    average_rating = serializers.SerializerMethodField()
-    reviews_count = serializers.SerializerMethodField()
+    # Используем аннотированные поля из queryset
+    average_rating = serializers.DecimalField(
+        max_digits=3, decimal_places=2, read_only=True, coerce_to_string=False
+    )
+    reviews_count = serializers.IntegerField(read_only=True)
     owner_name = serializers.CharField(source='owner.full_name', read_only=True)
     
     class Meta:
@@ -69,14 +68,6 @@ class VenueDetailSerializer(serializers.ModelSerializer):
             'is_active', 'categories', 'images', 'average_rating', 'reviews_count'
         )
         read_only_fields = ('id', 'created_at', 'owner')
-    
-    def get_average_rating(self, obj):
-        """Получить средний рейтинг"""
-        return obj.get_average_rating()
-    
-    def get_reviews_count(self, obj):
-        """Получить количество отзывов"""
-        return obj.get_reviews_count()
 
 
 class VenueCreateUpdateSerializer(serializers.ModelSerializer):
