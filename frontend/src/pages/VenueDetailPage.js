@@ -66,7 +66,12 @@ const VenueDetailPage = () => {
     
     setLoadingSlots(true);
     try {
-      const dateStr = date.toISOString().split('T')[0];
+      // Используем локальные методы даты для правильного форматирования
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      
       const response = await bookingsAPI.getOccupiedSlots(venue.id, dateStr);
       setOccupiedSlots(response.data.occupied_slots || []);
     } catch (error) {
@@ -155,8 +160,12 @@ const VenueDetailPage = () => {
     }
 
     try {
-      // Создаем даты с выбранным временем
-      const dateStr = selectedDate.toISOString().split('T')[0];
+      // Создаем даты с выбранным временем в локальном часовом поясе
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      
       const startDateTime = new Date(`${dateStr}T${startTime}:00`);
       const endDateTime = new Date(`${dateStr}T${endTime}:00`);
 
