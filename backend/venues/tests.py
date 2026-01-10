@@ -13,8 +13,12 @@ from decimal import Decimal
 User = get_user_model()
 
 
-# Отключаем APPEND_SLASH для тестов, чтобы не было редиректов 301
-@override_settings(APPEND_SLASH=False)
+# Отключаем APPEND_SLASH и SSL редирект для тестов
+@override_settings(
+    APPEND_SLASH=False,
+    SECURE_SSL_REDIRECT=False,
+    SECURE_PROXY_SSL_HEADER=None
+)
 class VenueQueryOptimizationTestCase(TestCase):
     """Тесты для проверки оптимизации N+1 queries"""
     
@@ -149,7 +153,11 @@ class VenueQueryOptimizationTestCase(TestCase):
         self.assertGreater(len(response.data), 0)
 
 
-@override_settings(APPEND_SLASH=False)
+@override_settings(
+    APPEND_SLASH=False,
+    SECURE_SSL_REDIRECT=False,
+    SECURE_PROXY_SSL_HEADER=None
+)
 class VenueSerializerTestCase(TestCase):
     """Тесты для сериализаторов площадок"""
     
@@ -211,7 +219,11 @@ class VenueSerializerTestCase(TestCase):
             self.assertIn(field, response.data, f'Поле {field} отсутствует')
 
 
-@override_settings(APPEND_SLASH=False)
+@override_settings(
+    APPEND_SLASH=False,
+    SECURE_SSL_REDIRECT=False,
+    SECURE_PROXY_SSL_HEADER=None
+)
 class VenueAPIPermissionsTestCase(TestCase):
     """Тесты прав доступа к API площадок"""
     
@@ -294,7 +306,11 @@ class VenueAPIPermissionsTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
 
-@override_settings(APPEND_SLASH=False)
+@override_settings(
+    APPEND_SLASH=False,
+    SECURE_SSL_REDIRECT=False,
+    SECURE_PROXY_SSL_HEADER=None
+)
 class VenueCategoryTestCase(TestCase):
     """Тесты для категорий площадок"""
     
