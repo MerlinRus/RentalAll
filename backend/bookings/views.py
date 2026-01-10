@@ -38,9 +38,20 @@ class BookingListCreateView(generics.ListCreateAPIView):
             return Booking.objects.all()
         return Booking.objects.filter(user=self.request.user)
     
-    def perform_create(self, serializer):
-        """Создание бронирования от имени текущего пользователя"""
-        serializer.save(user=self.request.user)
+    def create(self, request, *args, **kwargs):
+        """Создание бронирования с возвратом полного объекта"""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        booking = serializer.save(user=request.user)
+        
+        # Возвращаем полный объект через BookingSerializer
+        output_serializer = BookingSerializer(booking)
+        headers = self.get_success_headers(output_serializer.data)
+        return Response(
+            output_serializer.data,
+            status=status.HTTP_201_CREATED,
+            headers=headers
+        )
 
 
 class BookingDetailView(generics.RetrieveUpdateDestroyAPIView):
