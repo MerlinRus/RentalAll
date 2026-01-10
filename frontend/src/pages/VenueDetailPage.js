@@ -160,14 +160,34 @@ const VenueDetailPage = () => {
     }
 
     try {
-      // Создаем даты с выбранным временем в локальном часовом поясе
-      const year = selectedDate.getFullYear();
-      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-      const day = String(selectedDate.getDate()).padStart(2, '0');
-      const dateStr = `${year}-${month}-${day}`;
+      // Создаем даты используя конструктор Date с параметрами (гарантированно local time)
+      const [startHour, startMinute] = startTime.split(':').map(Number);
+      const [endHour, endMinute] = endTime.split(':').map(Number);
       
-      const startDateTime = new Date(`${dateStr}T${startTime}:00`);
-      const endDateTime = new Date(`${dateStr}T${endTime}:00`);
+      const startDateTime = new Date(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth(),
+        selectedDate.getDate(),
+        startHour,
+        startMinute,
+        0
+      );
+      
+      const endDateTime = new Date(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth(),
+        selectedDate.getDate(),
+        endHour,
+        endMinute,
+        0
+      );
+
+      console.log('Sending booking:', {
+        start_local: startDateTime.toString(),
+        start_iso: startDateTime.toISOString(),
+        end_local: endDateTime.toString(),
+        end_iso: endDateTime.toISOString()
+      });
 
       await bookingsAPI.create({
         venue: venue.id,
