@@ -79,7 +79,13 @@ class VenueQueryOptimizationTestCase(TestCase):
         connection.queries_was_reset = True
         
         with self.assertNumQueries(6):  # Увеличиваем до 6 для учёта аннотаций
-            response = self.client.get('/api/venues/')
+            response = self.client.get('/api/venues/', format='json')
+        
+        # Debug logging
+        print(f"\n🔍 Response status: {response.status_code}")
+        print(f"🔍 Response type: {type(response)}")
+        if hasattr(response, 'url'):
+            print(f"🔍 Redirect URL: {response.url}")
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 10)
@@ -96,7 +102,7 @@ class VenueQueryOptimizationTestCase(TestCase):
         venue = self.venues[0]
         
         with self.assertNumQueries(4):  # Ожидаем максимум 4 запроса
-            response = self.client.get(f'/api/venues/{venue.id}/')
+            response = self.client.get(f'/api/venues/{venue.id}/', format='json')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['id'], venue.id)
@@ -109,7 +115,7 @@ class VenueQueryOptimizationTestCase(TestCase):
         """Проверка правильности вычисления среднего рейтинга"""
         venue = self.venues[0]  # У этой площадки есть отзывы 4 и 5
         
-        response = self.client.get(f'/api/venues/{venue.id}/')
+        response = self.client.get(f'/api/venues/{venue.id}/', format='json')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
@@ -121,7 +127,7 @@ class VenueQueryOptimizationTestCase(TestCase):
         """Проверка площадки без отзывов"""
         venue = self.venues[-1]  # Последняя площадка без отзывов
         
-        response = self.client.get(f'/api/venues/{venue.id}/')
+        response = self.client.get(f'/api/venues/{venue.id}/', format='json')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
@@ -136,7 +142,7 @@ class VenueQueryOptimizationTestCase(TestCase):
                 'category': self.category1.id,
                 'capacity_min': 10,
                 'capacity_max': 50
-            })
+            }, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertGreater(len(response.data), 0)
@@ -171,7 +177,7 @@ class VenueSerializerTestCase(TestCase):
         """Проверка наличия всех полей в VenueListSerializer"""
         client = APIClient()
         client.default_format = 'json'
-        response = client.get(f'/api/venues/')
+        response = client.get(f'/api/venues/', format='json')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
@@ -241,7 +247,7 @@ class VenueAPIPermissionsTestCase(TestCase):
     
     def test_anonymous_can_list_venues(self):
         """Анонимный пользователь может просматривать список"""
-        response = self.client.get('/api/venues/')
+        response = self.client.get('/api/venues/', format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
     
     def test_anonymous_can_view_venue_detail(self):
@@ -257,7 +263,7 @@ class VenueAPIPermissionsTestCase(TestCase):
             'capacity': 10,
             'price_per_hour': '1000.00',
             'address': 'Адрес'
-        })
+        }, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
     
     def test_regular_user_cannot_create_venue(self):
@@ -270,7 +276,7 @@ class VenueAPIPermissionsTestCase(TestCase):
             'capacity': 10,
             'price_per_hour': '1000.00',
             'address': 'Адрес'
-        })
+        }, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
     
     def test_admin_can_create_venue(self):
@@ -283,7 +289,7 @@ class VenueAPIPermissionsTestCase(TestCase):
             'capacity': 10,
             'price_per_hour': '1000.00',
             'address': 'Адрес'
-        })
+        }, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
 
@@ -299,14 +305,14 @@ class VenueCategoryTestCase(TestCase):
     
     def test_list_categories(self):
         """Получение списка категорий"""
-        response = self.client.get('/api/venues/categories/')
+        response = self.client.get('/api/venues/categories/', format='json')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
     
     def test_category_fields(self):
         """Проверка полей категории"""
-        response = self.client.get('/api/venues/categories/')
+        response = self.client.get('/api/venues/categories/', format='json')
         
         category = response.data[0]
         self.assertIn('id', category)
