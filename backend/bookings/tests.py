@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.test.utils import override_settings
 from rest_framework.test import APIClient
 from rest_framework import status
 from datetime import timedelta
@@ -107,11 +108,17 @@ class BookingValidationTestCase(TestCase):
         self.assertIn('date_end', context.exception.message_dict)
 
 
+@override_settings(
+    APPEND_SLASH=False,
+    SECURE_SSL_REDIRECT=False,
+    SECURE_PROXY_SSL_HEADER=None
+)
 class BookingAPITestCase(TestCase):
     """Тесты API бронирований"""
     
     def setUp(self):
         self.client = APIClient()
+        self.client.default_format = 'json'
         self.user = User.objects.create_user(
             username='testuser',
             email='test@test.com',
@@ -269,11 +276,17 @@ class BookingAPITestCase(TestCase):
         self.assertEqual(float(response.data['total_price']), 3000.00)
 
 
+@override_settings(
+    APPEND_SLASH=False,
+    SECURE_SSL_REDIRECT=False,
+    SECURE_PROXY_SSL_HEADER=None
+)
 class BookingPermissionsTestCase(TestCase):
     """Тесты прав доступа к бронированиям"""
     
     def setUp(self):
         self.client = APIClient()
+        self.client.default_format = 'json'
         
         self.user1 = User.objects.create_user(
             username='user1',
