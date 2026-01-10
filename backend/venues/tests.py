@@ -75,17 +75,18 @@ class VenueQueryOptimizationTestCase(TestCase):
     
     def test_venue_list_query_count(self):
         """Проверка количества запросов к БД при получении списка площадок"""
+        # DEBUG: сначала проверим сам запрос
+        test_response = self.client.get('/api/venues/', format='json')
+        print(f"\n🔍 TEST Response status: {test_response.status_code}")
+        print(f"🔍 TEST Response type: {type(test_response)}")
+        if hasattr(test_response, 'url'):
+            print(f"🔍 TEST Redirect URL: {test_response.url}")
+        
         # Сбрасываем счётчик запросов
         connection.queries_was_reset = True
         
         with self.assertNumQueries(6):  # Увеличиваем до 6 для учёта аннотаций
             response = self.client.get('/api/venues/', format='json')
-        
-        # Debug logging
-        print(f"\n🔍 Response status: {response.status_code}")
-        print(f"🔍 Response type: {type(response)}")
-        if hasattr(response, 'url'):
-            print(f"🔍 Redirect URL: {response.url}")
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 10)
