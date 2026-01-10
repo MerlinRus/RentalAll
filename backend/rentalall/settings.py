@@ -162,6 +162,11 @@ CORS_ALLOWED_ORIGINS = config(
 
 CORS_ALLOW_CREDENTIALS = True
 
+# Настройки бронирования
+BOOKING_MIN_DURATION_HOURS = 1  # Минимальная длительность бронирования (часы)
+BOOKING_MAX_DURATION_HOURS = 24  # Максимальная длительность бронирования (часы)
+BOOKING_MAX_ADVANCE_DAYS = 90  # Максимальное количество дней для бронирования заранее
+
 # Security settings for production
 if not DEBUG:
     # HTTPS/SSL

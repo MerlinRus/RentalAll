@@ -1,8 +1,10 @@
 from django.db import models
 from django.conf import settings
 from django.core.validators import MinValueValidator
+from django.core.exceptions import ValidationError
 from venues.models import Venue
 from django.utils import timezone
+from datetime import timedelta
 
 
 class Booking(models.Model):
@@ -40,6 +42,36 @@ class Booking(models.Model):
     
     def __str__(self):
         return f"Бронь #{self.id} - {self.venue.title} ({self.get_status_display()})"
+    
+    def clean(self):
+        """Валидация на уровне модели"""
+        errors = {}
+        
+        if self.date_start and self.date_end:
+            # Проверка порядка дат
+            if self.date_end <= self.date_start:
+                errors['date_end'] = 'Дата окончания должна быть после даты начала'
+            
+            # Проверка длительности
+            duration = self.date_end - self.date_start
+            duration_hours = duration.total_seconds() / 3600
+            
+            min_duration = getattr(settings, 'BOOKING_MIN_DURATION_HOURS', 1)
+            max_duration = getattr(settings, 'BOOKING_MAX_DURATION_HOURS', 24)
+            
+            if duration_hours < min_duration:
+                errors['date_end'] = f'Минимальная длительность бронирования - {min_duration} ч.'
+            
+            if duration_hours > max_duration:
+                errors['date_end'] = f'Максимальная длительность бронирования - {max_duration} ч.'
+        
+        if errors:
+            raise ValidationError(errors)
+    
+    def save(self, *args, **kwargs):
+        """Переопределение save для вызова валидации"""
+        self.full_clean()
+        super().save(*args, **kwargs)
     
     def calculate_total_price(self):
         """Вычислить общую стоимость на основе времени аренды"""

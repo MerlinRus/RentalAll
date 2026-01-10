@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from django.utils import timezone
+from django.conf import settings
+from datetime import timedelta
 from .models import Booking, Payment
 from venues.serializers import VenueListSerializer
 
@@ -42,10 +44,24 @@ class BookingCreateSerializer(serializers.ModelSerializer):
         date_end = attrs.get('date_end')
         venue = attrs.get('venue')
         
+        # Получаем настройки бронирования
+        min_duration_hours = getattr(settings, 'BOOKING_MIN_DURATION_HOURS', 1)
+        max_duration_hours = getattr(settings, 'BOOKING_MAX_DURATION_HOURS', 24)
+        max_advance_days = getattr(settings, 'BOOKING_MAX_ADVANCE_DAYS', 90)
+        
+        now = timezone.now()
+        
         # Проверка, что дата начала не в прошлом
-        if date_start < timezone.now():
+        if date_start < now:
             raise serializers.ValidationError({
                 'date_start': 'Дата начала не может быть в прошлом'
+            })
+        
+        # Проверка максимального срока бронирования заранее
+        max_future_date = now + timedelta(days=max_advance_days)
+        if date_start > max_future_date:
+            raise serializers.ValidationError({
+                'date_start': f'Бронирование доступно максимум за {max_advance_days} дней'
             })
         
         # Проверка, что дата окончания после даты начала
@@ -54,17 +70,32 @@ class BookingCreateSerializer(serializers.ModelSerializer):
                 'date_end': 'Дата окончания должна быть после даты начала'
             })
         
-        # Проверка минимальной длительности (например, 1 час)
+        # Проверка длительности бронирования
         duration = date_end - date_start
-        if duration.total_seconds() < 3600:
+        duration_hours = duration.total_seconds() / 3600
+        
+        # Минимальная длительность
+        if duration_hours < min_duration_hours:
             raise serializers.ValidationError({
-                'date_end': 'Минимальная длительность бронирования - 1 час'
+                'date_end': f'Минимальная длительность бронирования - {min_duration_hours} ч.'
+            })
+        
+        # Максимальная длительность
+        if duration_hours > max_duration_hours:
+            raise serializers.ValidationError({
+                'date_end': f'Максимальная длительность бронирования - {max_duration_hours} ч.'
+            })
+        
+        # Проверка, что площадка активна
+        if not venue.is_active:
+            raise serializers.ValidationError({
+                'venue': 'Площадка недоступна для бронирования'
             })
         
         # Проверка доступности площадки
         if not Booking.check_availability(venue, date_start, date_end):
             raise serializers.ValidationError({
-                'venue': 'Площадка недоступна на выбранное время'
+                'venue': 'Площадка недоступна на выбранное время. Пожалуйста, выберите другой временной слот.'
             })
         
         return attrs
