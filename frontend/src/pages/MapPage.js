@@ -170,8 +170,9 @@ const MapPage = () => {
               const placemark = new window.ymaps.Placemark(
                 [parseFloat(venue.latitude), parseFloat(venue.longitude)],
                 {
-                  balloonContentHeader: `<div style="font-size: 1.1rem; font-weight: 600; color: #1A4D8F; margin-bottom: 8px;">${venue.title}</div>`,
-                  balloonContentBody: `
+                  // На мобильных не создаём balloon контент
+                  balloonContentHeader: !isMobile ? `<div style="font-size: 1.1rem; font-weight: 600; color: #1A4D8F; margin-bottom: 8px;">${venue.title}</div>` : '',
+                  balloonContentBody: !isMobile ? `
                     <div style="max-width: 300px;">
                       ${imageHtml}
                       <p style="margin: 8px 0; color: #6B6B6B; font-size: 0.9rem;"><strong>📍 Адрес:</strong> ${venue.address}</p>
@@ -180,7 +181,7 @@ const MapPage = () => {
                       ${venue.average_rating > 0 ? `<p style="margin: 8px 0; color: #F5A623; font-weight: 600;">⭐ ${venue.average_rating} (${venue.reviews_count} отзывов)</p>` : ''}
                       <a href="/venues/${venue.id}" style="display: block; width: 100%; margin-top: 12px; padding: 10px 20px; background: linear-gradient(135deg, #1A4D8F 0%, #4DA3FF 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; text-align: center; box-sizing: border-box; transition: transform 0.2s;">Подробнее →</a>
                     </div>
-                  `,
+                  ` : '',
                   hintContent: venue.title
                 },
                 {
@@ -192,17 +193,18 @@ const MapPage = () => {
                     </svg>
                   `),
                   iconImageSize: [50, 50],
-                  iconImageOffset: [-25, -25]
+                  iconImageOffset: [-25, -25],
+                  // На мобильных отключаем balloon
+                  hideIconOnBalloonOpen: false,
+                  balloonPanelMaxMapArea: isMobile ? 0 : Infinity
                 }
               );
 
               // На мобильных - открываем bottom sheet, на десктопе - balloon
               placemark.events.add('click', () => {
                 if (isMobile) {
-                  placemark.balloon.close(); // Закрываем balloon на мобильных
                   handleVenueClick(venue);
                 } else {
-                  // На десктопе balloon откроется автоматически
                   placemark.balloon.open();
                 }
               });

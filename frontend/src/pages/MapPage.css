@@ -506,13 +506,15 @@
   }
 
   /* На мобильных скрываем balloon, используем bottom sheet */
-  :global(.ymaps-2-1-79-balloon) {
+  :global(.ymaps-2-1-79-balloon),
+  :global(.ymaps-2-1-79-balloon__layout),
+  :global(.ymaps-2-1-79-balloon__content),
+  :global(.ymaps-2-1-79-balloon__tail),
+  :global([class*="ymaps"][class*="balloon"]) {
     display: none !important;
-  }
-
-  /* На мобильных не показываем balloon */
-  :global(.ymaps-2-1-79-balloon) {
-    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
   }
 }
 
