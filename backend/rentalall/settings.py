@@ -308,3 +308,23 @@ LOGGING = {
         'level': 'INFO',
     },
 }
+
+# Cache Configuration (Redis)
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': config('REDIS_URL', default='redis://127.0.0.1:6379/1'),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'KEY_PREFIX': 'rentalall',
+        'TIMEOUT': 60 * 15,  # 15 минут по умолчанию
+    }
+}
+
+# Cache time to live (seconds)
+CACHE_TTL = {
+    'venue_rating': 60 * 60,  # 1 час для рейтинга площадки
+    'venue_list': 60 * 5,     # 5 минут для списка площадок
+}
+

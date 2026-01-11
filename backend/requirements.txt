@@ -8,8 +8,10 @@ python-decouple==3.8
 django-filter>=24.0
 drf-yasg==1.21.7
 setuptools>=65.0.0
+django-redis==5.4.0
 
 # Production сервер
 gunicorn==21.2.0
 whitenoise==6.6.0
+
 

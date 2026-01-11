@@ -10,6 +10,7 @@ from .serializers import (
     ReviewUpdateSerializer,
     ReviewApproveSerializer
 )
+from venues.cache_utils import invalidate_venue_rating_cache
 
 # Инициализация логгера для reviews
 logger = logging.getLogger('reviews')
@@ -63,6 +64,9 @@ class ReviewCreateView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         review = serializer.save()
         
+        # Инвалидация кэша рейтинга площадки
+        invalidate_venue_rating_cache(review.venue.id)
+        
         logger.info(
             f"Review created: ID={review.id}, User={request.user.email}, "
             f"Venue={review.venue.title}, Rating={review.rating}, Booking={review.booking.id if review.booking else None}"
@@ -97,7 +101,17 @@ class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
         instance.is_approved = False
         self.perform_update(serializer)
         
+        # Инвалидация кэша рейтинга площадки
+        invalidate_venue_rating_cache(instance.venue.id)
+        
         return Response(ReviewSerializer(instance).data)
+    
+    def perform_destroy(self, instance):
+        """При удалении отзыва инвалидируем кэш"""
+        venue_id = instance.venue.id
+        instance.delete()
+        # Инвалидация кэша после удаления
+        invalidate_venue_rating_cache(venue_id)
 
 
 class ReviewApproveView(APIView):
@@ -117,6 +131,9 @@ class ReviewApproveView(APIView):
         review = get_object_or_404(Review, pk=pk)
         review.is_approved = True
         review.save()
+        
+        # Инвалидация кэша рейтинга площадки
+        invalidate_venue_rating_cache(review.venue.id)
         
         logger.info(
             f"Review approved: ID={pk}, Admin={request.user.email}, "
@@ -146,6 +163,9 @@ class ReviewDisapproveView(APIView):
         review = get_object_or_404(Review, pk=pk)
         review.is_approved = False
         review.save()
+        
+        # Инвалидация кэша рейтинга площадки
+        invalidate_venue_rating_cache(review.venue.id)
         
         logger.info(
             f"Review disapproved: ID={pk}, Admin={request.user.email}, "
