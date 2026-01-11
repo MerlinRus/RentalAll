@@ -416,7 +416,7 @@ class BookingTransactionTestCase(TestCase):
     def test_payment_process_atomic(self):
         """Проверка атомарности обработки платежа"""
         # Обработка платежа должна обновить и платёж, и бронирование
-        response = self.client.post(f'/api/payments/{self.payment.id}/process/')
+        response = self.client.post(f'/api/bookings/payments/{self.payment.id}/process/', format='json')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
@@ -433,7 +433,7 @@ class BookingTransactionTestCase(TestCase):
         # Имитируем ошибку при сохранении бронирования
         mock_save.side_effect = Exception('Database error')
         
-        response = self.client.post(f'/api/payments/{self.payment.id}/process/')
+        response = self.client.post(f'/api/bookings/payments/{self.payment.id}/process/', format='json')
         
         # Запрос должен завершиться ошибкой
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -468,7 +468,7 @@ class BookingTransactionTestCase(TestCase):
                 client = APIClient()
                 client.default_format = 'json'
                 client.force_authenticate(user=self.user)
-                response = client.post(f'/api/payments/{self.payment.id}/process/')
+                response = client.post(f'/api/bookings/payments/{self.payment.id}/process/', format='json')
                 results.append(response.status_code)
             except Exception as e:
                 results.append(str(e))
