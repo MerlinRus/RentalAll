@@ -41,7 +41,7 @@ class BookingLoggingTestCase(TestCase):
         )
         
         # Создаём площадку
-        self.category = Category.objects.create(name='Коворкинг', slug='coworking')
+        self.category = Category.objects.create(name='Коворкинг')
         self.venue = Venue.objects.create(
             title='Test Venue',
             description='Test',
@@ -176,7 +176,7 @@ class VenueLoggingTestCase(TestCase):
             role='admin'
         )
         
-        self.category = Category.objects.create(name='Коворкинг', slug='coworking')
+        self.category = Category.objects.create(name='Коворкинг')
     
     @patch('venues.views.logger')
     def test_venue_creation_logged(self, mock_logger):
@@ -272,6 +272,7 @@ class ReviewLoggingTestCase(TestCase):
         self.client.default_format = 'json'
         
         self.user = User.objects.create_user(
+            username='testuser',
             email='user@test.com',
             password='testpass123',
             full_name='Test User'
@@ -447,6 +448,7 @@ class SecurityLoggingTestCase(TestCase):
         self.client.default_format = 'json'
         
         self.user = User.objects.create_user(
+            username='testuser',
             email='user@test.com',
             password='testpass123',
             full_name='Test User'
