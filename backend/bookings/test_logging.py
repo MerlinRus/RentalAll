@@ -303,7 +303,7 @@ class ReviewLoggingTestCase(TestCase):
             date_start=timezone.now() - timedelta(days=1),
             date_end=timezone.now() - timedelta(hours=22),
             total_price=Decimal('2000.00'),
-            status='completed'
+            status='confirmed'
         )
     
     @patch('reviews.views.logger')
