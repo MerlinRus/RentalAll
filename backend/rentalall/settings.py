@@ -52,6 +52,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'rentalall.middleware.SecurityLoggingMiddleware',  # Логирование безопасности
 ]
 
 ROOT_URLCONF = 'rentalall.urls'
@@ -187,3 +188,123 @@ if not DEBUG:
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
 
+# Booking settings
+MIN_BOOKING_DURATION_HOURS = config('MIN_BOOKING_DURATION_HOURS', default=1, cast=int)
+MAX_BOOKING_DURATION_HOURS = config('MAX_BOOKING_DURATION_HOURS', default=24, cast=int)
+MAX_BOOKING_ADVANCE_DAYS = config('MAX_BOOKING_ADVANCE_DAYS', default=90, cast=int)
+
+# Logging Configuration
+LOGS_DIR = BASE_DIR / 'logs'
+LOGS_DIR.mkdir(exist_ok=True)  # Создаём папку, если её нет
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{levelname}] {asctime} {name} {module} {funcName} | {message}',
+            'style': '{',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        },
+        'simple': {
+            'format': '[{levelname}] {asctime} | {message}',
+            'style': '{',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        },
+    },
+    'filters': {
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
+        },
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+        'file_general': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOGS_DIR / 'general.log',
+            'maxBytes': 10 * 1024 * 1024,  # 10 MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+        'file_errors': {
+            'level': 'ERROR',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOGS_DIR / 'errors.log',
+            'maxBytes': 10 * 1024 * 1024,  # 10 MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+        'file_bookings': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOGS_DIR / 'bookings.log',
+            'maxBytes': 10 * 1024 * 1024,  # 10 MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+        'file_security': {
+            'level': 'WARNING',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOGS_DIR / 'security.log',
+            'maxBytes': 10 * 1024 * 1024,  # 10 MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        # Логгер Django
+        'django': {
+            'handlers': ['console', 'file_general'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        # Логгер ошибок Django
+        'django.request': {
+            'handlers': ['file_errors', 'console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        # Логгер приложения bookings
+        'bookings': {
+            'handlers': ['file_bookings', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        # Логгер приложения venues
+        'venues': {
+            'handlers': ['file_general', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        # Логгер приложения reviews
+        'reviews': {
+            'handlers': ['file_general', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        # Логгер приложения users
+        'users': {
+            'handlers': ['file_general', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        # Логгер безопасности
+        'security': {
+            'handlers': ['file_security', 'console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+    },
+    'root': {
+        'handlers': ['console', 'file_general'],
+        'level': 'INFO',
+    },
+}

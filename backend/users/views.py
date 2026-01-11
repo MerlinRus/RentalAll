@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth import get_user_model
+import logging
 from .serializers import (
     UserSerializer,
     UserRegistrationSerializer,
@@ -11,6 +12,10 @@ from .serializers import (
 )
 
 User = get_user_model()
+
+# Инициализация логгера для users
+logger = logging.getLogger('users')
+security_logger = logging.getLogger('security')
 
 
 class UserRegistrationView(generics.CreateAPIView):
@@ -23,6 +28,10 @@ class UserRegistrationView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        
+        logger.info(
+            f"User registered: Email={user.email}, Name={user.full_name}"
+        )
         
         return Response({
             'user': UserSerializer(user).data,
@@ -50,6 +59,9 @@ class ChangePasswordView(APIView):
             
             # Проверка старого пароля
             if not user.check_password(serializer.validated_data['old_password']):
+                security_logger.warning(
+                    f"Failed password change attempt: User={user.email}, Reason=Wrong old password"
+                )
                 return Response(
                     {'old_password': 'Неверный пароль'},
                     status=status.HTTP_400_BAD_REQUEST
@@ -58,6 +70,10 @@ class ChangePasswordView(APIView):
             # Установка нового пароля
             user.set_password(serializer.validated_data['new_password'])
             user.save()
+            
+            security_logger.info(
+                f"Password changed: User={user.email}"
+            )
             
             return Response(
                 {'message': 'Пароль успешно изменен'},

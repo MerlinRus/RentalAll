@@ -2,6 +2,7 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
+import logging
 from .models import Review
 from .serializers import (
     ReviewSerializer,
@@ -9,6 +10,9 @@ from .serializers import (
     ReviewUpdateSerializer,
     ReviewApproveSerializer
 )
+
+# Инициализация логгера для reviews
+logger = logging.getLogger('reviews')
 
 
 class IsOwnerOrAdmin(permissions.BasePermission):
@@ -59,6 +63,11 @@ class ReviewCreateView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         review = serializer.save()
         
+        logger.info(
+            f"Review created: ID={review.id}, User={request.user.email}, "
+            f"Venue={review.venue.title}, Rating={review.rating}, Booking={review.booking.id if review.booking else None}"
+        )
+        
         return Response(
             {
                 'message': 'Отзыв успешно создан и отправлен на модерацию',
@@ -97,6 +106,9 @@ class ReviewApproveView(APIView):
     
     def post(self, request, pk):
         if not request.user.is_admin():
+            logger.warning(
+                f"Review approve unauthorized: Review={pk}, User={request.user.email}"
+            )
             return Response(
                 {'error': 'Только администратор может одобрять отзывы'},
                 status=status.HTTP_403_FORBIDDEN
@@ -105,6 +117,11 @@ class ReviewApproveView(APIView):
         review = get_object_or_404(Review, pk=pk)
         review.is_approved = True
         review.save()
+        
+        logger.info(
+            f"Review approved: ID={pk}, Admin={request.user.email}, "
+            f"Venue={review.venue.title}, Author={review.user.email}"
+        )
         
         return Response(
             ReviewSerializer(review).data,
@@ -118,6 +135,9 @@ class ReviewDisapproveView(APIView):
     
     def post(self, request, pk):
         if not request.user.is_admin():
+            logger.warning(
+                f"Review disapprove unauthorized: Review={pk}, User={request.user.email}"
+            )
             return Response(
                 {'error': 'Только администратор может отклонять отзывы'},
                 status=status.HTTP_403_FORBIDDEN
@@ -126,6 +146,11 @@ class ReviewDisapproveView(APIView):
         review = get_object_or_404(Review, pk=pk)
         review.is_approved = False
         review.save()
+        
+        logger.info(
+            f"Review disapproved: ID={pk}, Admin={request.user.email}, "
+            f"Venue={review.venue.title}, Author={review.user.email}"
+        )
         
         return Response(
             ReviewSerializer(review).data,

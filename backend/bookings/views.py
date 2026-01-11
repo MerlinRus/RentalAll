@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.db import transaction
+import logging
 from .models import Booking, Payment
 from .serializers import (
     BookingSerializer,
@@ -11,6 +12,9 @@ from .serializers import (
     PaymentSerializer,
     PaymentCreateSerializer
 )
+
+# Инициализация логгера для bookings
+logger = logging.getLogger('bookings')
 
 
 class IsOwnerOrAdmin(permissions.BasePermission):
@@ -44,6 +48,11 @@ class BookingListCreateView(generics.ListCreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         booking = serializer.save(user=request.user)
+        
+        logger.info(
+            f"Booking created: ID={booking.id}, User={request.user.email}, "
+            f"Venue={booking.venue.title}, Start={booking.date_start}, End={booking.date_end}"
+        )
         
         # Возвращаем полный объект через BookingSerializer
         output_serializer = BookingSerializer(booking)
@@ -80,6 +89,10 @@ class BookingCancelView(APIView):
         
         # Проверка возможности отмены
         if not booking.can_be_cancelled():
+            logger.warning(
+                f"Booking cancel failed: ID={pk}, User={request.user.email}, "
+                f"Reason=Cannot be cancelled"
+            )
             return Response(
                 {'error': 'Это бронирование не может быть отменено'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -87,6 +100,11 @@ class BookingCancelView(APIView):
         
         booking.status = 'cancelled'
         booking.save()
+        
+        logger.info(
+            f"Booking cancelled: ID={pk}, User={request.user.email}, "
+            f"Venue={booking.venue.title}"
+        )
         
         # Опционально: отменить связанные неоплаченные платежи
         booking.payments.filter(status='pending').update(status='failed')
@@ -104,6 +122,10 @@ class BookingConfirmView(APIView):
     @transaction.atomic
     def post(self, request, pk):
         if not request.user.is_admin():
+            logger.warning(
+                f"Booking confirm unauthorized: ID={pk}, User={request.user.email}, "
+                f"Reason=Not admin"
+            )
             return Response(
                 {'error': 'Только администратор может подтверждать бронирования'},
                 status=status.HTTP_403_FORBIDDEN
@@ -112,6 +134,10 @@ class BookingConfirmView(APIView):
         booking = get_object_or_404(Booking.objects.select_for_update(), pk=pk)
         
         if booking.status != 'pending':
+            logger.warning(
+                f"Booking confirm failed: ID={pk}, Admin={request.user.email}, "
+                f"Reason=Status is {booking.status}"
+            )
             return Response(
                 {'error': 'Можно подтверждать только бронирования в статусе "Ожидает подтверждения"'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -119,6 +145,11 @@ class BookingConfirmView(APIView):
         
         booking.status = 'confirmed'
         booking.save()
+        
+        logger.info(
+            f"Booking confirmed: ID={pk}, Admin={request.user.email}, "
+            f"Venue={booking.venue.title}, User={booking.user.email}"
+        )
         
         return Response(
             BookingSerializer(booking).data,
@@ -179,12 +210,19 @@ class PaymentProcessView(APIView):
         
         # Проверка прав
         if payment.booking.user != request.user and not request.user.is_admin():
+            logger.warning(
+                f"Payment process unauthorized: Payment={pk}, User={request.user.email}, "
+                f"Booking owner={payment.booking.user.email}"
+            )
             return Response(
                 {'error': 'Нет прав для обработки этого платежа'},
                 status=status.HTTP_403_FORBIDDEN
             )
         
         if payment.status == 'paid':
+            logger.warning(
+                f"Payment already paid: Payment={pk}, User={request.user.email}"
+            )
             return Response(
                 {'error': 'Платеж уже оплачен'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -202,6 +240,11 @@ class PaymentProcessView(APIView):
         if booking.status == 'pending':
             booking.status = 'confirmed'
             booking.save()
+        
+        logger.info(
+            f"Payment processed: Payment={pk}, User={request.user.email}, "
+            f"Amount={payment.amount}, Booking={booking.id}"
+        )
         
         return Response(
             {

@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django.db.models import Avg, Count, Q
+import logging
 from .models import Category, Venue, VenueImage
 from .serializers import (
     CategorySerializer,
@@ -13,6 +14,9 @@ from .serializers import (
     VenueImageSerializer
 )
 from .filters import VenueFilter
+
+# Инициализация логгера для venues
+logger = logging.getLogger('venues')
 
 
 class IsAdminOrReadOnly(permissions.BasePermission):
@@ -75,7 +79,11 @@ class VenueListView(generics.ListCreateAPIView):
         return queryset
     
     def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
+        venue = serializer.save(owner=self.request.user)
+        logger.info(
+            f"Venue created: ID={venue.id}, Title={venue.title}, "
+            f"Owner={self.request.user.email}, Price={venue.price_per_hour}"
+        )
 
 
 class VenueDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -105,6 +113,20 @@ class VenueDetailView(generics.RetrieveUpdateDestroyAPIView):
         if self.request.method in ['PUT', 'PATCH']:
             return VenueCreateUpdateSerializer
         return VenueDetailSerializer
+    
+    def perform_update(self, serializer):
+        venue = serializer.save()
+        logger.info(
+            f"Venue updated: ID={venue.id}, Title={venue.title}, "
+            f"Editor={self.request.user.email}"
+        )
+    
+    def perform_destroy(self, instance):
+        logger.warning(
+            f"Venue deleted: ID={instance.id}, Title={instance.title}, "
+            f"Deleted by={self.request.user.email}"
+        )
+        instance.delete()
 
 
 class VenueImageUploadView(APIView):
