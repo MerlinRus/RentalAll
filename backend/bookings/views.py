@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.db import transaction
 import logging
+from rentalall.throttling import BookingRateThrottle
 from .models import Booking, Payment
 from .serializers import (
     BookingSerializer,
@@ -31,6 +32,7 @@ class IsOwnerOrAdmin(permissions.BasePermission):
 class BookingListCreateView(generics.ListCreateAPIView):
     """Список бронирований пользователя и создание нового"""
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [BookingRateThrottle]  # Ограничение: 10 бронирований/час
     
     def get_serializer_class(self):
         if self.request.method == 'POST':

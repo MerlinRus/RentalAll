@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 import logging
+from rentalall.throttling import ReviewRateThrottle
 from .models import Review
 from .serializers import (
     ReviewSerializer,
@@ -58,6 +59,7 @@ class ReviewCreateView(generics.CreateAPIView):
     """Создание нового отзыва"""
     serializer_class = ReviewCreateSerializer
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ReviewRateThrottle]  # Ограничение: 5 отзывов/день
     
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

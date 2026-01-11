@@ -144,6 +144,16 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 12,
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/hour',  # Анонимные пользователи: 100 запросов в час
+        'user': '1000/hour',  # Авторизованные: 1000 запросов в час
+        'booking': '10/hour',  # Создание бронирований: 10 в час
+        'review': '5/day',  # Создание отзывов: 5 в день
+    }
 }
 
 # JWT Settings
