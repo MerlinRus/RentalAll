@@ -27,11 +27,13 @@ class BookingLoggingTestCase(TestCase):
         
         # Создаём пользователей
         self.user = User.objects.create_user(
+            username='testuser',
             email='user@test.com',
             password='testpass123',
             full_name='Test User'
         )
         self.admin = User.objects.create_user(
+            username='adminuser',
             email='admin@test.com',
             password='adminpass123',
             full_name='Admin User',
@@ -167,6 +169,7 @@ class VenueLoggingTestCase(TestCase):
         self.client.default_format = 'json'
         
         self.admin = User.objects.create_user(
+            username='adminuser',
             email='admin@test.com',
             password='adminpass123',
             full_name='Admin User',
@@ -274,6 +277,7 @@ class ReviewLoggingTestCase(TestCase):
             full_name='Test User'
         )
         self.admin = User.objects.create_user(
+            username='adminuser',
             email='admin@test.com',
             password='adminpass123',
             full_name='Admin User',
@@ -362,6 +366,7 @@ class UserLoggingTestCase(TestCase):
     def test_user_registration_logged(self, mock_logger):
         """Проверка логирования регистрации пользователя"""
         response = self.client.post('/api/users/register/', {
+            'username': 'newuser',
             'email': 'newuser@test.com',
             'password': 'newpass123',
             'password2': 'newpass123',
@@ -383,6 +388,7 @@ class UserLoggingTestCase(TestCase):
     def test_password_change_logged(self, mock_security_logger):
         """Проверка логирования смены пароля"""
         user = User.objects.create_user(
+            username='testuser',
             email='user@test.com',
             password='oldpass123',
             full_name='Test User'
@@ -408,6 +414,7 @@ class UserLoggingTestCase(TestCase):
     def test_failed_password_change_logged(self, mock_security_logger):
         """Проверка логирования неудачной смены пароля"""
         user = User.objects.create_user(
+            username='testuser',
             email='user@test.com',
             password='oldpass123',
             full_name='Test User'
