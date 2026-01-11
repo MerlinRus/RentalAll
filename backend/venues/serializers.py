@@ -11,12 +11,20 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class VenueImageSerializer(serializers.ModelSerializer):
-    """Сериализатор для фотографий площадки"""
+    """Сериализатор для фотографий площадки с thumbnails"""
     
     class Meta:
         model = VenueImage
-        fields = ('id', 'image', 'uploaded_at')
-        read_only_fields = ('id', 'uploaded_at')
+        fields = (
+            'id', 'image', 'uploaded_at',
+            'thumbnail_small', 'thumbnail_medium', 'thumbnail_large',
+            'thumbnail_small_webp', 'thumbnail_medium_webp', 'thumbnail_large_webp'
+        )
+        read_only_fields = (
+            'id', 'uploaded_at',
+            'thumbnail_small', 'thumbnail_medium', 'thumbnail_large',
+            'thumbnail_small_webp', 'thumbnail_medium_webp', 'thumbnail_large_webp'
+        )
 
 
 class VenueListSerializer(serializers.ModelSerializer):

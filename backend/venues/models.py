@@ -67,7 +67,7 @@ class Venue(models.Model):
 
 
 class VenueImage(models.Model):
-    """Фотография площадки"""
+    """Фотография площадки с автоматической генерацией thumbnails"""
     venue = models.ForeignKey(
         Venue,
         on_delete=models.CASCADE,
@@ -75,6 +75,47 @@ class VenueImage(models.Model):
         verbose_name='Площадка'
     )
     image = models.ImageField('Изображение', upload_to='venue_images/')
+    
+    # Thumbnails JPEG
+    thumbnail_small = models.ImageField(
+        'Миниатюра (маленькая)',
+        upload_to='venue_images/thumbnails/',
+        blank=True,
+        null=True
+    )
+    thumbnail_medium = models.ImageField(
+        'Миниатюра (средняя)',
+        upload_to='venue_images/thumbnails/',
+        blank=True,
+        null=True
+    )
+    thumbnail_large = models.ImageField(
+        'Миниатюра (большая)',
+        upload_to='venue_images/thumbnails/',
+        blank=True,
+        null=True
+    )
+    
+    # Thumbnails WebP
+    thumbnail_small_webp = models.ImageField(
+        'Миниатюра WebP (маленькая)',
+        upload_to='venue_images/thumbnails/',
+        blank=True,
+        null=True
+    )
+    thumbnail_medium_webp = models.ImageField(
+        'Миниатюра WebP (средняя)',
+        upload_to='venue_images/thumbnails/',
+        blank=True,
+        null=True
+    )
+    thumbnail_large_webp = models.ImageField(
+        'Миниатюра WebP (большая)',
+        upload_to='venue_images/thumbnails/',
+        blank=True,
+        null=True
+    )
+    
     uploaded_at = models.DateTimeField('Дата загрузки', auto_now_add=True)
     
     class Meta:
@@ -85,6 +126,53 @@ class VenueImage(models.Model):
     
     def __str__(self):
         return f"Фото {self.venue.title}"
+    
+    def save(self, *args, **kwargs):
+        """Переопределяем save для автоматической генерации thumbnails"""
+        # Если это новое изображение или изображение было изменено
+        if self.pk is None or self._state.adding:
+            # Импортируем здесь, чтобы избежать циклических импортов
+            from .image_utils import generate_all_thumbnails, get_thumbnail_filename
+            import logging
+            
+            logger = logging.getLogger(__name__)
+            
+            try:
+                # Генерируем все thumbnails
+                thumbnails = generate_all_thumbnails(self.image.file, self.image.name)
+                
+                # Сохраняем JPEG thumbnails
+                if 'small' in thumbnails:
+                    filename = get_thumbnail_filename(self.image.name, 'small', 'jpg')
+                    self.thumbnail_small.save(filename, thumbnails['small'], save=False)
+                
+                if 'medium' in thumbnails:
+                    filename = get_thumbnail_filename(self.image.name, 'medium', 'jpg')
+                    self.thumbnail_medium.save(filename, thumbnails['medium'], save=False)
+                
+                if 'large' in thumbnails:
+                    filename = get_thumbnail_filename(self.image.name, 'large', 'jpg')
+                    self.thumbnail_large.save(filename, thumbnails['large'], save=False)
+                
+                # Сохраняем WebP thumbnails
+                if 'small_webp' in thumbnails:
+                    filename = get_thumbnail_filename(self.image.name, 'small', 'webp')
+                    self.thumbnail_small_webp.save(filename, thumbnails['small_webp'], save=False)
+                
+                if 'medium_webp' in thumbnails:
+                    filename = get_thumbnail_filename(self.image.name, 'medium', 'webp')
+                    self.thumbnail_medium_webp.save(filename, thumbnails['medium_webp'], save=False)
+                
+                if 'large_webp' in thumbnails:
+                    filename = get_thumbnail_filename(self.image.name, 'large', 'webp')
+                    self.thumbnail_large_webp.save(filename, thumbnails['large_webp'], save=False)
+                
+                logger.info(f"Generated thumbnails for image: {self.image.name}")
+            
+            except Exception as e:
+                logger.error(f"Error generating thumbnails for {self.image.name}: {e}")
+        
+        super().save(*args, **kwargs)
 
 
 class VenueCategory(models.Model):
