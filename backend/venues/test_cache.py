@@ -148,10 +148,21 @@ class VenueRatingCacheTestCase(TestCase):
         cache_key = get_cache_key(self.venue.id, 'rating_data')
         self.assertIsNotNone(cache.get(cache_key))
         
+        # Создаём дополнительное бронирование для нового отзыва
+        booking2 = Booking.objects.create(
+            venue=self.venue,
+            user=self.admin,
+            date_start=timezone.now() - timedelta(days=1),
+            date_end=timezone.now() - timedelta(days=1, hours=-2),
+            total_price=Decimal('2000.00'),
+            status='confirmed'
+        )
+        
         # Создаём новый отзыв через API (должна сработать инвалидация)
         self.client.force_authenticate(user=self.admin)
         response = self.client.post('/api/reviews/create/', {
             'venue': self.venue.id,
+            'booking': booking2.id,
             'rating': 3,
             'comment': 'Нормально'
         }, format='json')
