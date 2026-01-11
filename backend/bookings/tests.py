@@ -4,10 +4,12 @@ from django.utils import timezone
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.test.utils import override_settings
+from django.db import transaction
 from rest_framework.test import APIClient
 from rest_framework import status
 from datetime import timedelta
 from decimal import Decimal
+from unittest.mock import patch
 from .models import Booking, Payment
 from venues.models import Venue, Category
 
@@ -361,3 +363,132 @@ class BookingPermissionsTestCase(TestCase):
         }, format='json')
         
         self.assertIn(response.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])
+
+
+@override_settings(
+    APPEND_SLASH=False,
+    SECURE_SSL_REDIRECT=False,
+    SECURE_PROXY_SSL_HEADER=None
+)
+class BookingTransactionTestCase(TestCase):
+    """Тесты для проверки транзакций при операциях с бронированиями"""
+    
+    def setUp(self):
+        self.client = APIClient()
+        self.client.default_format = 'json'
+        
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@test.com',
+            password='pass123',
+            phone='+79001111111'
+        )
+        
+        self.venue = Venue.objects.create(
+            owner=self.user,
+            title='Площадка',
+            description='Описание',
+            capacity=50,
+            price_per_hour=Decimal('1000.00'),
+            address='Адрес',
+            is_active=True
+        )
+        
+        now = timezone.now()
+        self.booking = Booking.objects.create(
+            user=self.user,
+            venue=self.venue,
+            date_start=now + timedelta(hours=1),
+            date_end=now + timedelta(hours=3),
+            total_price=Decimal('2000.00'),
+            status='pending'
+        )
+        
+        self.payment = Payment.objects.create(
+            booking=self.booking,
+            amount=self.booking.total_price,
+            payment_method='card',
+            status='pending'
+        )
+        
+        self.client.force_authenticate(user=self.user)
+    
+    def test_payment_process_atomic(self):
+        """Проверка атомарности обработки платежа"""
+        # Обработка платежа должна обновить и платёж, и бронирование
+        response = self.client.post(f'/api/payments/{self.payment.id}/process/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Проверяем что оба объекта обновлены
+        self.payment.refresh_from_db()
+        self.booking.refresh_from_db()
+        
+        self.assertEqual(self.payment.status, 'paid')
+        self.assertEqual(self.booking.status, 'confirmed')
+    
+    @patch('bookings.models.Booking.save')
+    def test_payment_process_rollback_on_booking_error(self, mock_save):
+        """Проверка отката транзакции при ошибке сохранения бронирования"""
+        # Имитируем ошибку при сохранении бронирования
+        mock_save.side_effect = Exception('Database error')
+        
+        response = self.client.post(f'/api/payments/{self.payment.id}/process/')
+        
+        # Запрос должен завершиться ошибкой
+        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Проверяем что платёж НЕ был обновлён (rollback)
+        self.payment.refresh_from_db()
+        self.assertEqual(self.payment.status, 'pending')
+    
+    def test_booking_cancel_with_payment_update(self):
+        """Проверка что при отмене бронирования отменяются неоплаченные платежи"""
+        response = self.client.post(f'/api/bookings/{self.booking.id}/cancel/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Проверяем что бронирование отменено
+        self.booking.refresh_from_db()
+        self.assertEqual(self.booking.status, 'cancelled')
+        
+        # Проверяем что неоплаченный платёж также отменён
+        self.payment.refresh_from_db()
+        self.assertEqual(self.payment.status, 'failed')
+    
+    def test_concurrent_payment_processing(self):
+        """Проверка защиты от race conditions при параллельной обработке платежа"""
+        from threading import Thread
+        from time import sleep
+        
+        results = []
+        
+        def process_payment():
+            try:
+                client = APIClient()
+                client.default_format = 'json'
+                client.force_authenticate(user=self.user)
+                response = client.post(f'/api/payments/{self.payment.id}/process/')
+                results.append(response.status_code)
+            except Exception as e:
+                results.append(str(e))
+        
+        # Запускаем два параллельных запроса
+        thread1 = Thread(target=process_payment)
+        thread2 = Thread(target=process_payment)
+        
+        thread1.start()
+        thread2.start()
+        
+        thread1.join()
+        thread2.join()
+        
+        # Один запрос должен успешно обработаться (200)
+        # Второй должен получить ошибку "уже оплачен" (400)
+        self.assertIn(status.HTTP_200_OK, results)
+        self.assertIn(status.HTTP_400_BAD_REQUEST, results)
+        
+        # Проверяем финальное состояние
+        self.payment.refresh_from_db()
+        self.assertEqual(self.payment.status, 'paid')
+

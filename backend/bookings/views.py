@@ -2,6 +2,7 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
+from django.db import transaction
 from .models import Booking, Payment
 from .serializers import (
     BookingSerializer,
@@ -69,8 +70,10 @@ class BookingCancelView(APIView):
     """Отмена бронирования"""
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
     
+    @transaction.atomic
     def post(self, request, pk):
-        booking = get_object_or_404(Booking, pk=pk)
+        # Используем select_for_update для блокировки записи
+        booking = get_object_or_404(Booking.objects.select_for_update(), pk=pk)
         
         # Проверка прав
         self.check_object_permissions(request, booking)
@@ -85,6 +88,9 @@ class BookingCancelView(APIView):
         booking.status = 'cancelled'
         booking.save()
         
+        # Опционально: отменить связанные неоплаченные платежи
+        booking.payments.filter(status='pending').update(status='failed')
+        
         return Response(
             BookingSerializer(booking).data,
             status=status.HTTP_200_OK
@@ -95,6 +101,7 @@ class BookingConfirmView(APIView):
     """Подтверждение бронирования (только для администраторов)"""
     permission_classes = [permissions.IsAuthenticated]
     
+    @transaction.atomic
     def post(self, request, pk):
         if not request.user.is_admin():
             return Response(
@@ -102,7 +109,7 @@ class BookingConfirmView(APIView):
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        booking = get_object_or_404(Booking, pk=pk)
+        booking = get_object_or_404(Booking.objects.select_for_update(), pk=pk)
         
         if booking.status != 'pending':
             return Response(
@@ -166,6 +173,7 @@ class PaymentProcessView(APIView):
     """Обработка платежа (имитация оплаты для диплома)"""
     permission_classes = [permissions.IsAuthenticated]
     
+    @transaction.atomic
     def post(self, request, pk):
         payment = get_object_or_404(Payment, pk=pk)
         
@@ -182,14 +190,18 @@ class PaymentProcessView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
+        # Используем select_for_update для предотвращения race conditions
+        payment = Payment.objects.select_for_update().get(pk=pk)
+        booking = Booking.objects.select_for_update().get(pk=payment.booking.id)
+        
         # Имитация успешной оплаты
         payment.status = 'paid'
         payment.save()
         
         # Автоматически подтверждаем бронирование после оплаты
-        if payment.booking.status == 'pending':
-            payment.booking.status = 'confirmed'
-            payment.booking.save()
+        if booking.status == 'pending':
+            booking.status = 'confirmed'
+            booking.save()
         
         return Response(
             {
